@@ -1,0 +1,45 @@
+# Author           : Stanisław Świrydczuk ( s197896@student.pg.edu.pl )
+# Created On       : 28.04
+# Last Modified By : Stanisław Świrydczuk ( s197896@student.pg.edu.pl )
+# Last Modified On : 29.04
+# Version          : 0.5
+#
+# Description      : skrypt tworzacy kolaz z wybranych zdjec na platformie MacOS
+#                   przy pomocy narzedzia montage
+#                   z pakietu ImageMagick
+#                   Wymaga zainstalowanego ImageMagick
+
+# Generator kolaży obrazów
+# Wykorzystuje Zenity i ImageMagick
+
+# Sprawdzenie czy wymagane narzędzia są zainstalowane
+#!/bin/bash
+
+source "$(dirname "$0")/config"
+source "$(dirname "$0")/dependencies"
+source "$(dirname "$0")/ui"
+source "$(dirname "$0")/collage"
+source "$(dirname "$0")/reorder"
+
+while getopts ":hv" opt; do
+    case ${opt} in
+        h )
+            show_help
+            exit 0
+            ;;
+        v )
+            show_version
+            exit 0
+            ;;
+        \? )
+            echo "Unknown option: -$OPTARG" 1>&2
+            echo "Use -h to display help" 1>&2
+            exit 1
+            ;;
+    esac
+done
+shift $((OPTIND -1))
+
+if [ $OPTIND -eq 1 ]; then
+    run_collage_generator
+fi

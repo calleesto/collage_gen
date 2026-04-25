@@ -1,0 +1,66 @@
+reorder_images() {
+    local files=($@)
+    local temp_dir="/tmp/collage_reorder_$$"
+    mkdir -p "$temp_dir" || { zenity --error --text="Can't create $temp_dir"; return 1; }
+
+    local preview_html="$temp_dir/preview.html"
+    local reordered_files=("${files[@]}")
+
+    #create an HTML preview file to show thumbnails of all selected images
+    cat > "$preview_html" <<EOF
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Image Preview</title>
+<style>
+body { font-family: sans-serif; margin: 20px; }
+.container { display: flex; flex-wrap: wrap; gap: 15px; }
+.image-box { width: 180px; text-align: center; margin-bottom: 15px; position: relative; }
+.image-box img { width: 100%; height: 150px; object-fit: cover; }
+.number { position: absolute; top: 5px; left: 5px; background: black; color: white; padding: 2px 8px; border-radius: 10px; font-size: 14px; }
+.filename { font-size: 12px; padding: 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+</style></head><body>
+<h2>Image Preview</h2><p>Note the image numbers to swap them.</p>
+<div class="container">
+EOF
+
+    #add each image with its preview and index number
+    for ((i=0; i<${#files[@]}; i++)); do
+        local filename=$(basename "${files[$i]}")
+        echo "<div class=\"image-box\"><img src=\"file://${files[$i]}\" alt=\"$filename\"><div class=\"number\">$((i+1))</div><div class=\"filename\">$filename</div></div>" >> "$preview_html"
+    done
+
+    echo "</div></body></html>" >> "$preview_html"
+
+    #try to open the preview in a browser
+    open "$preview_html" 2>/dev/null || xdg-open "$preview_html" 2>/dev/null || zenity --error --text="Can't open preview"
+
+    zenity --info --text="Preview opened. You can reorder images by index."
+
+    local continue=true
+    while $continue; do
+        #ask user what they want to do
+        action=$(zenity --list --title="Image Order" --text="Choose action:" --column="Action" "Swap images" "Finish")
+        
+        if [ "$action" = "Swap images" ]; then
+            #prompt for two indices to swap
+            first=$(zenity --entry --text="First image number" --entry-text="1")
+            second=$(zenity --entry --text="Second image number" --entry-text="2")
+
+            #check if inputs are valid numbers and swap the images
+            if [[ "$first" =~ ^[0-9]+$ ]] && [[ "$second" =~ ^[0-9]+$ ]]; then
+                idx1=$((first - 1))
+                idx2=$((second - 1))
+                temp="${reordered_files[$idx1]}"
+                reordered_files[$idx1]="${reordered_files[$idx2]}"
+                reordered_files[$idx2]="$temp"
+                zenity --info --text="Swapped $first and $second"
+            else
+                zenity --error --text="Invalid input"
+            fi
+        else
+            continue=false
+        fi
+    done
+
+    rm -rf "$temp_dir"
+    echo "${reordered_files[@]}"
+}

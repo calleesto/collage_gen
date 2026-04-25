@@ -1,0 +1,9 @@
+VERSION="1.0"
+AUTHOR="Stanisław Świrydczuk (s197896@student.pg.edu.pl)"
+
+set -o nounset
+trap 'cleanup' EXIT
+
+cleanup() {
+    rm -rf "/tmp/collage_generator_$$" "/tmp/collage_reorder_$$" 2>/dev/null
+}

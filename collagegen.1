@@ -1,0 +1,46 @@
+.TH COLLAGEGEN 1 "April 2025" "1.0" "Collage Generator Manual"
+
+.SH NAME
+collagegen \- generate a collage from selected image files via GUI
+
+.SH SYNOPSIS
+.B collagegen
+[\fB-h\fR] [\fB-v\fR]
+
+.SH DESCRIPTION
+\fBcollagegen\fR is a script that lets you select image files through a graphical interface and generate a collage using ImageMagick's \fBmontage\fR. The collage is previewed and optionally saved.
+
+If no options are provided, the collage generator is launched.
+
+.SH OPTIONS
+.TP
+\fB-h\fR
+Display help and usage information.
+
+.TP
+\fB-v\fR
+Show the script version.
+
+.SH EXAMPLES
+Run the collage creator:
+.PP
+.B collagegen
+
+Display help:
+.PP
+.B collagegen \-h
+
+Show version info:
+.PP
+.B collagegen \-v
+
+.SH DEPENDENCIES
+Zenity, ImageMagick (montage), and optionally eog, xdg-open, or display for previewing images.
+
+.SH AUTHOR
+Written by You.
+
+.SH SEE ALSO
+.BR montage (1),
+.BR zenity (1),
+.BR bash (1)

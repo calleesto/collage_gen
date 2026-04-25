@@ -1,0 +1,107 @@
+show_preview() {
+    local image_path="$1"
+    local viewer_pid=""
+
+    #for macOS use 'open' to view the image
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        open "$image_path" &
+        viewer_pid=$!
+    #for linux try 'eog' (eye of gnome) if available
+    elif command -v eog &> /dev/null; then
+        eog "$image_path" &
+        viewer_pid=$!
+    #alternatively use 'xdg-open' if the system supports it
+    elif command -v xdg-open &> /dev/null; then
+        xdg-open "$image_path" &
+        viewer_pid=$!
+    #if imagemagick's 'display' is available use it to open the image
+    elif command -v display &> /dev/null; then
+        display "$image_path" &
+        viewer_pid=$!
+    else
+        #if no viewer is available show a zenity message to prompt manual opening
+        zenity --info --title="Preview" --text="Saved preview: $image_path. Please open manually."
+        return 1
+    fi
+
+    echo "$viewer_pid"
+}
+
+generate_collage() {
+    local rows=$1
+    local cols=$2
+    local files=(${@:3})
+    local total_images=$((rows * cols))
+    local temp_dir="/tmp/collage_generator_$$"
+
+    #create a temporary directory to store the preview collage
+    mkdir -p "$temp_dir" || { zenity --error --text="Can't create $temp_dir"; return 1; }
+    local preview_file="$temp_dir/preview.jpg"
+
+    #check if the files are valid images
+    for file in "${files[@]:0:$total_images}"; do
+        [ -f "$file" ] || { zenity --error --text="File missing: $file"; return 1; }
+        file -b --mime-type "$file" | grep -q "image/" || { zenity --error --text="Not an image: $file"; return 1; }
+    done
+
+    #build the montage command to create the collage
+    local montage_cmd="montage"
+    for ((i=0; i<total_images; i++)); do
+        montage_cmd+=" \"${files[$i]}\""
+    done
+    montage_cmd+=" -tile ${cols}x${rows} -geometry +5+5 \"$preview_file\""
+
+    #run the montage command and check for errors
+    eval $montage_cmd || { zenity --error --text="Collage failed."; return 1; }
+
+    #if the preview image was created show it
+    if [ -f "$preview_file" ]; then
+        viewer_pid=$(show_preview "$preview_file")
+        sleep 1
+        #ask the user if they want to save the collage
+        if zenity --question --text="Save this collage?"; then
+            [ -n "$viewer_pid" ] && kill $viewer_pid 2>/dev/null || true
+            save_path=$(zenity --file-selection --save --filename="collage.jpg")
+            [ -n "$save_path" ] && cp "$preview_file" "$save_path" && zenity --info --text="Saved as $save_path"
+        else
+            [ -n "$viewer_pid" ] && kill $viewer_pid 2>/dev/null || true
+            zenity --info --text="Cancelled."
+        fi
+    else
+        zenity --error --text="Preview failed."
+    fi
+
+    #clean up the temporary directory
+    rm -rf "$temp_dir"
+}
+
+run_collage_generator() {
+    #check if necessary dependencies are available
+    check_dependencies
+
+    #prompt the user to select images
+    files=$(zenity --file-selection --multiple --file-filter="Images | *.jpg *.jpeg *.png *.gif *.bmp")
+    [ -z "$files" ] && { zenity --error --text="No files selected"; exit 1; }
+
+    #split the file list into an array
+    #ifs (internal field separator) defines the delimiter for splitting the string
+    IFS='|' read -ra file_array <<< "$files"
+    [ ${#file_array[@]} -eq 0 ] && { zenity --error --text="File parsing failed"; exit 1; }
+
+    #optionally allow the user to reorder images
+    zenity --question --text="Change image order?" && file_array=($(reorder_images "${file_array[@]}"))
+
+    #prompt the user for collage dimensions
+    dimensions=$(zenity --forms --text="Enter collage grid size:" --add-entry="Rows" --add-entry="Columns")
+    [ -z "$dimensions" ] && { zenity --error --text="No dimensions given"; exit 1; }
+    IFS='|' read -r rows cols <<< "$dimensions"
+
+    #validate the dimensions
+    [[ "$rows" =~ ^[1-9][0-9]*$ ]] && [[ "$cols" =~ ^[1-9][0-9]*$ ]] || { zenity --error --text="Invalid dimensions: rows=$rows cols=$cols"; exit 1; }
+
+    #check if the number of images is enough for the selected grid
+    local total_images=$((rows * cols))
+    [ ${#file_array[@]} -lt $total_images ] && { zenity --error --text="Too few images: ${#file_array[@]} / needed: $total_images"; exit 1; }
+
+    generate_collage "$rows" "$cols" "${file_array[@]}" || zenity --error --text="Collage creation failed"
+}

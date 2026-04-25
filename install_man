@@ -1,0 +1,20 @@
+#!/bin/bash
+
+MANPAGE="collagegen.1"
+TARGET_DIR="/usr/local/share/man/man1"
+
+if [[ $EUID -ne 0 ]]; then
+    echo "Please run this script as root (e.g., sudo $0)"
+    exit 1
+fi
+
+if [ ! -f "$MANPAGE" ]; then
+    echo "Man page $MANPAGE not found in current directory."
+    exit 1
+fi
+
+mkdir -p "$TARGET_DIR"
+install -m 644 "$MANPAGE" "$TARGET_DIR/"
+gzip -f "$TARGET_DIR/$MANPAGE"
+
+echo "Man page installed. You can test it with: man collagegen"

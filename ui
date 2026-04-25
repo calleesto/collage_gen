@@ -1,0 +1,14 @@
+show_help() {
+    echo "Collage generator from selected images"
+    echo "Usage: $0 [OPTIONS]"
+    echo "Options:"
+    echo "  -h    Show this help"
+    echo "  -v    Show version and author info"
+    echo ""
+    echo "Requires: zenity, ImageMagick."
+}
+
+show_version() {
+    echo "Collage Generator version $VERSION"
+    echo "Author: $AUTHOR"
+}

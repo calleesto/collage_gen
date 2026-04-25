@@ -1,0 +1,27 @@
+check_dependencies() {
+    local missing_deps=()
+
+    if ! command -v zenity &> /dev/null; then
+        missing_deps+=("zenity")
+    fi
+
+    if ! command -v convert &> /dev/null || ! command -v montage &> /dev/null; then
+        missing_deps+=("ImageMagick")
+    fi
+
+    if [ ${#missing_deps[@]} -gt 0 ]; then
+        echo "Missing dependencies: ${missing_deps[*]}"
+        echo "Install required packages before running the script."
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            echo "On macOS, you can use: brew install ${missing_deps[*]}"
+        else
+            echo "On Linux, you can use: sudo apt-get install ${missing_deps[*]}"
+        fi
+        exit 1
+    fi
+
+    if [ ! -w "/tmp" ]; then
+        echo "Error: No write permission to /tmp"
+        exit 1
+    fi
+}
