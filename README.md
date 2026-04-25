@@ -1,4 +1,4 @@
-# Collage Generator (`collagegen`)
+# Collage Generator in Bash
 
 A modular Bash-based utility for creating image collages via a GUI. Designed for macOS and Linux, it automates image processing using ImageMagick and Zenity.
 
